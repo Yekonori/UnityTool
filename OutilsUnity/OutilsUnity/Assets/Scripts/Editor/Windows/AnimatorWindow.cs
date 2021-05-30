@@ -136,6 +136,13 @@ public class AnimatorWindow : EditorWindow
 
         _canFocusOnAnimation = false;
 
+        ResetOptions();
+
+        _windowWidth = 0f;
+    }
+
+    private void ResetOptions()
+    {
         _sampleLoopMode = false;
         _sampleLoopDelay = 0;
 
@@ -144,8 +151,6 @@ public class AnimatorWindow : EditorWindow
 
         _sampleSpeedMode = false;
         _animationClipSampleSpeed = 0f;
-
-        _windowWidth = 0f;
     }
 
     #region Animator
@@ -203,7 +208,7 @@ public class AnimatorWindow : EditorWindow
                                 {
                                     _selectedAnimator = null;
                                     _selectedClip = null;
-
+                                    ResetOptions();
                                 }
                             }
                         }
@@ -232,11 +237,7 @@ public class AnimatorWindow : EditorWindow
             {
                 _selectedClip = null;
 
-                _sampleStepMode = false;
-                _animationClipSampleStep = 0f;
-
-                _sampleSpeedMode = false;
-                _animationClipSampleSpeed = 1f;
+                ResetOptions();
             }
 
             _selectedAnimator = animator;
@@ -258,8 +259,7 @@ public class AnimatorWindow : EditorWindow
             {
                 _selectedClip = animationClip;
 
-                _sampleStepMode = false;
-                _animationClipSampleStep = 0f;
+                ResetOptions();
             }
         }
     }
@@ -372,7 +372,7 @@ public class AnimatorWindow : EditorWindow
             GUILayout.EndVertical();
         }
     }
-
+    
     private void DisplayAnimationsButtons()
     {
         if (!Application.isPlaying && _selectedClip != null)
