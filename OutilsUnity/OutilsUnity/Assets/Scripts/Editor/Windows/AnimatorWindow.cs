@@ -24,11 +24,16 @@ public class AnimatorWindow : EditorWindow
 
     private bool _canFocusOnAnimation = false;
 
+    private bool _sampleLoopMode = false;
+    private int _sampleLoopDelay = 0;
+
     private bool _sampleStepMode = false;
     private float _animationClipSampleStep = 0f;
 
     private bool _sampleSpeedMode = false;
     private float _animationClipSampleSpeed = 1f;
+
+    private float _windowWidth = 0f;
 
     #region Style
 
@@ -45,7 +50,8 @@ public class AnimatorWindow : EditorWindow
     [MenuItem("Custom Window/Animator Window")]
     public static void ShowWindow()
     {
-        EditorWindow.GetWindow(typeof(AnimatorWindow));
+        EditorWindow window = EditorWindow.GetWindow(typeof(AnimatorWindow));
+        window.minSize = new Vector2(650, 650);
     }
 
     #region Unity Methods
@@ -96,6 +102,8 @@ public class AnimatorWindow : EditorWindow
 
     private void OnGUI()
     {
+        _windowWidth = position.width;
+
         DisplayAnimators();
         DisplayAnimations();
         DisplayAnimationsOptions();
@@ -128,11 +136,16 @@ public class AnimatorWindow : EditorWindow
 
         _canFocusOnAnimation = false;
 
+        _sampleLoopMode = false;
+        _sampleLoopDelay = 0;
+
         _sampleStepMode = false;
         _animationClipSampleStep = 0f;
 
         _sampleSpeedMode = false;
         _animationClipSampleSpeed = 0f;
+
+        _windowWidth = 0f;
     }
 
     #region Animator
@@ -182,55 +195,52 @@ public class AnimatorWindow : EditorWindow
                         {
                             if (animator.name.ToLowerInvariant().Contains(_searchString.ToLowerInvariant()))
                             {
-                                if (GUILayout.Button($"{animator.name}"))
+                                DisplayAnimatorButton(animator);
+                            }
+                            else
+                            {
+                                if (_selectedAnimator == animator)
                                 {
-                                    SceneView.FrameLastActiveSceneView();
-                                    Selection.activeGameObject = animator.gameObject;
-                                    SceneView.FrameLastActiveSceneView();
+                                    _selectedAnimator = null;
+                                    _selectedClip = null;
 
-                                    if (_selectedAnimator != animator)
-                                    {
-                                        _selectedClip = null;
-
-                                        _sampleStepMode = false;
-                                        _animationClipSampleStep = 0f;
-
-                                        _sampleSpeedMode = false;
-                                        _animationClipSampleSpeed = 1f;
-                                    }
-
-                                    _selectedAnimator = animator;
-                                    _animationsClipsOnAnimator = animator.runtimeAnimatorController.animationClips.ToList();
                                 }
                             }
                         }
                         else
                         {
-                            if (GUILayout.Button($"{animator.name}"))
-                            {
-                                SceneView.FrameLastActiveSceneView();
-                                Selection.activeGameObject = animator.gameObject;
-                                SceneView.FrameLastActiveSceneView();
-
-                                if (_selectedAnimator != animator)
-                                {
-                                    _selectedClip = null;
-
-                                    _sampleStepMode = false;
-                                    _animationClipSampleStep = 0f;
-
-                                    _sampleSpeedMode = false;
-                                    _animationClipSampleSpeed = 1f;
-                                }
-
-                                _selectedAnimator = animator;
-                                _animationsClipsOnAnimator = animator.runtimeAnimatorController.animationClips.ToList();
-                            }
+                            DisplayAnimatorButton(animator);
                         }
                     }
                 }
             }
             GUILayout.EndVertical();
+        }
+    }
+
+    private void DisplayAnimatorButton(Animator animator)
+    {
+        if (GUILayout.Button($"{animator.name}"))
+        {
+            EditorGUIUtility.PingObject(animator);
+
+            SceneView.FrameLastActiveSceneView();
+            Selection.activeGameObject = animator.gameObject;
+            SceneView.FrameLastActiveSceneView();
+
+            if (_selectedAnimator != animator)
+            {
+                _selectedClip = null;
+
+                _sampleStepMode = false;
+                _animationClipSampleStep = 0f;
+
+                _sampleSpeedMode = false;
+                _animationClipSampleSpeed = 1f;
+            }
+
+            _selectedAnimator = animator;
+            _animationsClipsOnAnimator = animator.runtimeAnimatorController.animationClips.ToList();
         }
     }
 
@@ -287,22 +297,47 @@ public class AnimatorWindow : EditorWindow
     {
         if (!Application.isPlaying && _selectedClip != null)
         {
-            if (!_isSimulatingAnimation)
+            DrawSeparatorLine();
+
+            GUILayout.Label("Animations Options", EditorStyles.boldLabel);
+
+            EditorGUILayout.Space(10);
+
+            GUILayout.BeginHorizontal();
             {
-                DrawSeparatorLine();
-
-                GUILayout.Label("Animations Options", EditorStyles.boldLabel);
-
-                EditorGUILayout.Space(10);
-
-                GUILayout.BeginVertical();
+                GUILayout.BeginVertical(GUILayout.Width(_windowWidth/3));
                 {
-                    GUILayout.BeginHorizontal();
+                    GUILayout.BeginHorizontal(GUILayout.Width(_windowWidth / 3));
                     {
-                        _sampleStepMode = GUILayout.Toggle(_sampleStepMode, "Sample Step Mode");
+                        _sampleLoopMode = GUILayout.Toggle(_sampleLoopMode, "Loop Options");
+                    }
+                    GUILayout.EndHorizontal();
 
+                    GUILayout.BeginHorizontal(GUILayout.Width(_windowWidth / 3));
+                    {
+                        if (_sampleLoopMode)
+                        {
+                            GUILayout.Label("Delay : ");
+                            _sampleLoopDelay = EditorGUILayout.IntSlider(_sampleLoopDelay, 0, 30);
+                        }
+                    }
+                    GUILayout.EndHorizontal();
+                }
+                GUILayout.EndHorizontal();
+
+                GUILayout.BeginVertical(GUILayout.Width(_windowWidth / 3));
+                {
+                    GUILayout.BeginHorizontal(GUILayout.Width(_windowWidth / 3));
+                    {
+                        _sampleStepMode = GUILayout.Toggle(_sampleStepMode, "Step Option");
+                    }
+                    GUILayout.EndHorizontal();
+
+                    GUILayout.BeginHorizontal(GUILayout.Width(_windowWidth / 3));
+                    {
                         if (_sampleStepMode)
                         {
+                            GUILayout.Label("Frame : ");
                             _animationClipSampleStep = EditorGUILayout.Slider(_animationClipSampleStep, 0f, _selectedClip.length);
 
                             Selection.activeGameObject = _selectedAnimator.gameObject;
@@ -312,25 +347,29 @@ public class AnimatorWindow : EditorWindow
                     }
                     GUILayout.EndHorizontal();
                 }
-                GUILayout.EndVertical();
+                GUILayout.EndHorizontal();
 
-                GUILayout.BeginVertical();
+                GUILayout.BeginVertical(GUILayout.Width(_windowWidth / 3));
                 {
-                    GUILayout.BeginHorizontal();
+                    GUILayout.BeginHorizontal(GUILayout.Width(_windowWidth / 3));
                     {
-                        _sampleSpeedMode = GUILayout.Toggle(_sampleSpeedMode, "Sample Speed Mode");
+                        _sampleSpeedMode = GUILayout.Toggle(_sampleSpeedMode, "Speed Option");
+                    }
+                    GUILayout.EndHorizontal();
 
+                    GUILayout.BeginHorizontal(GUILayout.Width(_windowWidth / 3));
+                    {
                         if (_sampleSpeedMode)
                         {
+                            GUILayout.Label("Speed : ");
                             _animationClipSampleSpeed = EditorGUILayout.Slider(_animationClipSampleSpeed, 0.1f, 5f);
                         }
                     }
                     GUILayout.EndHorizontal();
                 }
-                GUILayout.EndVertical();
-
-                EditorGUILayout.Space(25);
+                GUILayout.EndHorizontal();
             }
+            GUILayout.EndVertical();
         }
     }
 
@@ -401,10 +440,18 @@ public class AnimatorWindow : EditorWindow
 
         if (_animationTimer >= _selectedClip.length)
         {
-            StopAnimSimulation();
+            if (_sampleLoopMode)
+            {
+                //StartAnimSimulation();
+                _lastEditorTime = Time.realtimeSinceStartup + _sampleLoopDelay;
+            }
+            else
+            {
+                StopAnimSimulation();
 
-            Selection.activeGameObject = _selectedAnimator.gameObject;
-            SceneView.lastActiveSceneView.FrameSelected(true, true);
+                Selection.activeGameObject = _selectedAnimator.gameObject;
+                SceneView.lastActiveSceneView.FrameSelected(true, true);
+            }
         }
         else
         {
